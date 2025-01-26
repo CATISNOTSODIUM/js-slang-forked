@@ -2,15 +2,15 @@
 // Draft
 import es from 'estree'
 import { substituterNodes } from "../../types"
-import { oneStep, oneStepPossible } from "./reduce"
+import { reduceOneStep, reduceOneStepPossible } from "./reduce"
 import {codify} from "../stepper"
 
 function evaluate(node: substituterNodes): string[] {
   const steps: string[] = []
   for (let i = 0; i < 10; i++) {
-    node = oneStep(node)
+    node = reduceOneStep(node)
     steps.push(codify(node).replace('\n',''))
-    if (!oneStepPossible(node)) break
+    if (!reduceOneStepPossible(node)) break
   }
   return steps
 }
