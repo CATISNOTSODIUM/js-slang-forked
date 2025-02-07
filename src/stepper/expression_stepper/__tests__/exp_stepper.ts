@@ -6,8 +6,8 @@ test(`Order of simplification`, async () => {
   const programStr = '1 * 2 + 3 * 4;'
   const context = mockContext();
   const result = getEvaluationSteps(parse(programStr, context)!).join('\n');
-  console.log(result);
-});
+  expect(result.replace(/\n/g,'')).toMatchInlineSnapshot(`"1 * 2 + 3 * 4;2 + 3 * 4;2 + 12;14;"`)}
+);
 
 test(`Multiple statements`, async () => {
   const programStr = '5 + 6; 7 + 8; 9 + 10;'

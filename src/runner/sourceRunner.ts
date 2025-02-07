@@ -19,13 +19,6 @@ import { defaultAnalysisOptions } from '../modules/preprocessor/analyzer'
 import { defaultLinkerOptions } from '../modules/preprocessor/linker'
 import { parse } from '../parser/parser'
 import { AsyncScheduler, NonDetScheduler, PreemptiveScheduler } from '../schedulers'
-import {
-  callee,
-  getEvaluationSteps,
-  getRedex,
-  type IStepperPropContents,
-  redexify
-} from '../stepper/stepper'
 import { sandboxedEval } from '../transpiler/evalContainer'
 import { transpile } from '../transpiler/transpiler'
 import { Chapter, type Context, type RecursivePartial, type Scheduler, Variant } from '../types'
@@ -38,6 +31,7 @@ import { mapResult } from '../alt-langs/mapper'
 import { toSourceError } from './errors'
 import { fullJSRunner } from './fullJSRunner'
 import { determineExecutionMethod, determineVariant, resolvedErrorPromise } from './utils'
+import { getEvaluationStepsExpr } from '../stepper/expression_stepper/v2/stepper'
 
 const DEFAULT_SOURCE_OPTIONS: Readonly<IOptions> = {
   scheduler: 'async',
@@ -87,7 +81,22 @@ function runConcurrent(program: es.Program, context: Context, options: IOptions)
   }
 }
 
-function runSubstitution(
+function runSubstitution( 
+  program: es.Program,
+  context: Context,
+  options: IOptions
+): Promise<Result> {
+  const steps = getEvaluationStepsExpr(program)
+  console.log("JS-SLANG steps", steps);
+  return Promise.resolve({
+    status: 'finished',
+    context,
+    value: steps
+  })
+}
+
+/*
+function _runSubstitution( 
   program: es.Program,
   context: Context,
   options: IOptions
@@ -113,6 +122,7 @@ function runSubstitution(
     value: redexedSteps
   })
 }
+*/
 
 function runInterpreter(program: es.Program, context: Context, options: IOptions): Promise<Result> {
   let it = evaluate(program, context)

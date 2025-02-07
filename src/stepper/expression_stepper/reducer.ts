@@ -1,25 +1,21 @@
 import es from 'estree'
 import * as ast from '../../utils/ast/astCreator'
 import { evaluateBinaryExpression, evaluateUnaryExpression } from '../../utils/operators'
-import { substituterNodes } from '../../types';
-
-type Node = substituterNodes;
-
+import { substituterNodes } from '../../types'
+type Node = substituterNodes
 // Literal checkers
-
 function isBooleanLiteral(node: Node) {
   return node.type === 'Literal' && typeof node.value === 'boolean'
 }
-
 function isNumberLiteral(node: Node) {
   return node.type === 'Literal' && typeof node.value === 'number'
 }
 
-// E -> E'
-function reducible(node: Node): boolean {
-  const validators = {
+// Contract regex
+function contractible(node: Node): boolean {
+  const contractibleValidators = {
     Literal() {
-      return false;
+      return false
     },
     UnaryExpression(node: es.UnaryExpression) {
       switch (node.operator) {
@@ -42,25 +38,24 @@ function reducible(node: Node): boolean {
       switch (node.operator) {
         case '&&':
         case '||':
-          return isBooleanLiteral(node.left) && isBooleanLiteral(node.right);
-        default: 
-          return false;
+          return isBooleanLiteral(node.left) && isBooleanLiteral(node.right)
+        default:
+          return false
       }
     },
     ConditionalExpression(node: es.ConditionalExpression) {
-      return isBooleanLiteral(node.test);
+      return isBooleanLiteral(node.test)
     },
     default(_: Node) {
-      return false;
+      return false
     }
   }
-  const validator = validators[node.type] || validators.default;
-  return validator(node);
+  const validator = contractibleValidators[node.type] || contractibleValidators.default
+  return validator(node)
 }
 
-function reduce(node: Node): Node {
-  // The implementor must ensure that node is reducible before sending through this function.
-  const reducers = {
+function contract(node: Node): Node {
+  const contractors = {
     UnaryExpression(node: es.UnaryExpression) {
       return ast.literal(
         evaluateUnaryExpression(node.operator, (node.argument as es.Literal).value),
@@ -75,7 +70,7 @@ function reduce(node: Node): Node {
           (node.right as es.Literal).value
         ),
         node.loc
-      );
+      )
     },
     LogicalExpression(node: es.LogicalExpression) {
       return node.operator === '&&'
@@ -84,105 +79,118 @@ function reduce(node: Node): Node {
           : ast.literal(false, node.loc)
         : (node.left as es.Literal).value
         ? ast.literal(true, node.loc)
-        : node.right;
+        : node.right
     },
     ConditionalExpression(node: es.ConditionalExpression) {
-      return (node.test as es.Literal).raw === 'true' ? node.alternate : node.consequent;
+      return (node.test as es.Literal).raw === 'true' ? node.alternate : node.consequent
     },
     default(node: Node) {
-      return node;
+      return node
     }
   }
-  const reducer = reducers[node.type] || reducers.default;
-  return reducer(node);
+
+  // The implementor must ensure that node is contractible before sending through this function.
+  const contract = contractors[node.type] || contractors.default
+  return contract(node)
 }
 
-export function reduceOneStepPossible(node: Node): boolean {
-  if (reducible(node)) {
-    return true
-  }
-  const validators = {
-    Program(node: es.Program) { 
-      if (node.body.length === 1 && !reduceOneStepPossible(node.body[0])) {
-        return false;
+export function OneStepPossible(node: Node): boolean {
+  const OneStepValidators = {
+    Program(node: es.Program) {
+      if (node.body.length === 1 && !OneStepPossible(node.body[0])) {
+        return false
       } else {
-        return true;
+        return true
       }
     },
     ExpressionStatement(node: es.ExpressionStatement) {
-      return reduceOneStepPossible(node.expression);
+      return OneStepPossible(node.expression)
     },
     UnaryExpression(node: es.UnaryExpression) {
-      return reduceOneStepPossible(node.argument);
+      return OneStepPossible(node.argument)
     },
     BinaryExpression(node: es.BinaryExpression) {
-      return reduceOneStepPossible(node.left) || reduceOneStepPossible(node.right)
+      return OneStepPossible(node.left) || OneStepPossible(node.right)
     },
     LogicalExpression(node: es.LogicalExpression) {
-      return reduceOneStepPossible(node.left) || reduceOneStepPossible(node.right);
+      return OneStepPossible(node.left) || OneStepPossible(node.right)
     },
     ConditionalExpression(node: es.ConditionalExpression) {
-      return reduceOneStepPossible(node.test)
+      return OneStepPossible(node.test)
     },
     default(_: Node) {
-      return false;
+      return false
     }
   }
-  const validator = validators[node.type] || validators.default;
-  return validator(node);
+  if (contractible(node)) {
+    return true
+  }
+  const validator = OneStepValidators[node.type] || OneStepValidators.default
+  return validator(node)
 }
 
-// !Important: All nodes passed into this function must ensure that reduceOneStepPossible(node) is true.
-// Stepper
-export function reduceOneStep(node: Node): Node {
-  const steppers = {
-    Reducible(node: Node) { 
-      return reduce(node) // reduction E -> E'
+// !Important: All nodes passed into this function must ensure that OneStepPossible(node) is true.
+export function OneStep(node: Node): Node {
+  const OneSteppers = {
+    contractible(node: Node) {
+      return contract(node) // reduction E -> E' (changing the AST type)
     },
-    Program(node: es.Program) {
+    Program(node: es.Program): es.Program {
       /**
         @Rule E1; E2; -> E1'; E2;
         @ProgramIntro V; E;  -> V; E';
-        @ProgramReduce V1; V2; ...; Vk; E1, E2, ... -> Vk; E1', E2, ...
+        @Programcontract V1; V2; ...; Vk; E1, E2, ... -> Vk; E1', E2, ...
       */
       if (node.body.length == 0) {
-        return ast.identifier('undefined');
+        return ast.program([])
       }
-      if (node.body.length == 1) { // E; -> E';
-        const newBody = reduceOneStep(node.body[0]) as es.Statement;
-        return ast.program([newBody]);
+      if (node.body.length == 1) {
+        // E; -> E';
+        const newBody = OneStep(node.body[0]) as es.Statement
+        return ast.program([newBody])
       }
-      for (let i = 0; i < 2; i++) {  // reduce only first two statements      
-        if (reduceOneStepPossible(node.body[i])) {
-          let newBody = node.body;
-          newBody[i] = reduceOneStep(node.body[i]) as es.Statement;
-          return ast.program(newBody as es.Statement[]);
+      for (let i = 0; i < 2; i++) {
+        // contract only first two statements
+        if (OneStepPossible(node.body[i])) {
+          let newBody = node.body
+          newBody[i] = OneStep(node.body[i]) as es.Statement
+          return ast.program(newBody as es.Statement[])
         }
       }
-      node.body.shift(); 
-      return ast.program(node.body as es.Statement[]);
+      node.body.shift(); // remove the first value-inducing statement
+      return ast.program(node.body as es.Statement[])
     },
-    ExpressionStatement(node: es.ExpressionStatement) { // E; -> E';
-      return ast.expressionStatement(reduceOneStep(node.expression) as es.Expression)
+    ExpressionStatement(node: es.ExpressionStatement): es.ExpressionStatement {
+      // E; -> E';
+      return ast.expressionStatement(OneStep(node.expression) as es.Expression)
     },
-    UnaryExpression(node: es.UnaryExpression) { // UnaryOp(E) -> UnaryOp(E')
-      return ast.unaryExpression(node.operator, reduceOneStep(node.argument) as es.Expression)
+    UnaryExpression(node: es.UnaryExpression): es.UnaryExpression {
+      // UnaryOp(E) -> UnaryOp(E')
+      return ast.unaryExpression(node.operator, OneStep(node.argument) as es.Expression)
     },
-    BinaryExpression(node: es.BinaryExpression) {
-      if (reduceOneStepPossible(node.left)) {
+    BinaryExpression(node: es.BinaryExpression): es.BinaryExpression {
+      if (OneStepPossible(node.left)) {
         // BinOp[E1, E2] -> BinOp[E1', E2]
-        return ast.binaryExpression(node.operator, reduceOneStep(node.left) as es.Expression, node.right)
+        return ast.binaryExpression(
+          node.operator,
+          OneStep(node.left) as es.Expression,
+          node.right
+        )
       } else {
         // BinOp[V, E] -> BinOp[V, E']
-        return ast.binaryExpression(node.operator, node.left, reduceOneStep(node.right) as es.Expression)
+        return ast.binaryExpression(
+          node.operator,
+          node.left,
+          OneStep(node.right) as es.Expression
+        )
       }
     },
-    LogicalExpression(node: es.LogicalExpression) {
-      if (reduceOneStepPossible(node.left)) {
+    LogicalExpression(node: es.LogicalExpression): es.LogicalExpression {
+      if (OneStepPossible(node.left)) {
         // BinOp[E1, E2] -> BinOp[E1', E2]
         return ast.logicalExpression(
           node.operator,
-          reduceOneStep(node.left) as es.Expression,
+          OneStep(node.left) as es.Expression,
           node.right,
           node.loc
         )
@@ -191,29 +199,31 @@ export function reduceOneStep(node: Node): Node {
         return ast.logicalExpression(
           node.operator,
           node.left,
-          reduceOneStep(node.right) as es.Expression,
+          OneStep(node.right) as es.Expression,
           node.loc
         )
-      }     
-    },
-    ConditionalExpression(node: es.ConditionalExpression) {
-      if (reduceOneStepPossible(node.test)) {
-        // E1 : E2 ? E3 -> E1' : E2 ? E3
-        return ast.conditionalExpression(
-          reduceOneStep(node.test) as es.Expression,
-          node.consequent,
-          node.alternate
-        )
-      } else { // conditionalExpression is reducible already
-        return reduceOneStep(node);  
       }
     },
-    default(node: Node) {
-      return node;
+    ConditionalExpression(node: es.ConditionalExpression): es.ConditionalExpression {
+      if (OneStepPossible(node.test)) {
+        // E1 : E2 ? E3 -> E1' : E2 ? E3
+        return ast.conditionalExpression(
+          OneStep(node.test) as es.Expression,
+          node.alternate,
+          node.consequent
+        )
+      } else {
+        // conditionalExpression is contractible already
+        return OneStep(node) as es.ConditionalExpression
+      }
+    },
+    default(node: Node): Node {
+      return node
     }
   }
-
-  const stepper = reducible(node) ? steppers["Reducible"] : steppers[node.type] ?? steppers.default;
-  node = stepper(node);
-  return node;
+  const stepper = contractible(node)
+    ? OneSteppers['contractible']
+    : OneSteppers[node.type] ?? OneSteppers.default
+  node = stepper(node)
+  return node
 }
