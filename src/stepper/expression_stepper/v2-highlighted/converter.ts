@@ -31,10 +31,10 @@ function treeify(node: stepper.StepperExpression, isHighlighted = true): string 
         return "";
     }
     let res = (treeifiers(node as any) ?? '').toString();
-    if (node.status === 'AFTER_CONTRACT') {
+    if (node.status === 'afterMarker') {
       res = `\x1b[100m${res}\x1b[0m`
       node.status = undefined // reset status
-    } else if (node.status === 'BEFORE_CONTRACT') {
+    } else if (node.status === 'beforeMarker') {
       // res = `\x1b[43m${res}\x1b[0m`
       // node.status = undefined // reset status
     }

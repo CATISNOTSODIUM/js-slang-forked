@@ -31,7 +31,7 @@ import { mapResult } from '../alt-langs/mapper'
 import { toSourceError } from './errors'
 import { fullJSRunner } from './fullJSRunner'
 import { determineExecutionMethod, determineVariant, resolvedErrorPromise } from './utils'
-import { getEvaluationStepsExpr } from '../stepper/expression_stepper/v2/stepper'
+import { getEvaluationStepsExpr } from '../stepper/expression_stepper/v2-highlighted/stepper'
 
 const DEFAULT_SOURCE_OPTIONS: Readonly<IOptions> = {
   scheduler: 'async',
@@ -87,7 +87,6 @@ function runSubstitution(
   options: IOptions
 ): Promise<Result> {
   const steps = getEvaluationStepsExpr(program)
-  console.log("JS-SLANG steps", steps);
   return Promise.resolve({
     status: 'finished',
     context,

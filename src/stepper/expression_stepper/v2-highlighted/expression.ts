@@ -23,14 +23,14 @@ export interface StepperAST {
   contract(): StepperExpression
   oneStepPossible(): boolean
   oneStep(): StepperExpression
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
 }
 
 export class StepperLiteral implements StepperAST {
   type: 'Literal'
   value: string | boolean | number | null
   raw?: string | undefined
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
   constructor(value: string | number | boolean | null) {
     this.type = 'Literal';
     this.value = value;
@@ -61,7 +61,7 @@ export class StepperUnaryExpression implements StepperAST {
   operator: UnaryOperator
   prefix: true
   argument: StepperExpression
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
   constructor(operator: UnaryOperator, argument: StepperExpression) {
     this.type = 'UnaryExpression';
     this.operator = operator;
@@ -86,7 +86,7 @@ export class StepperUnaryExpression implements StepperAST {
   }
   contract(): StepperExpression {
     const returnExpression =  new StepperUnaryExpression(this.operator, this.argument.contract())
-    returnExpression.status = 'AFTER_CONTRACT';
+    returnExpression.status = 'afterMarker';
     return returnExpression;
   }
   oneStepPossible(): boolean {
@@ -103,7 +103,7 @@ export class StepperLogicalExpression implements StepperAST {
   operator: LogicalOperator
   left: StepperExpression
   right: StepperExpression
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
   constructor(operator: LogicalOperator, left: StepperExpression, right: StepperExpression) {
     this.type = 'LogicalExpression'
     this.operator = operator
@@ -125,7 +125,7 @@ export class StepperLogicalExpression implements StepperAST {
       ? isBooleanLiteral(this.left) && isBooleanLiteral(this.right)
       : false;
     if (result) {
-      this.status = 'BEFORE_CONTRACT'
+      this.status = 'beforeMarker'
     }
     return result;
   }
@@ -138,7 +138,7 @@ export class StepperLogicalExpression implements StepperAST {
       : (this.left as StepperLiteral).value
       ? new StepperLiteral(true)
       : this.right
-    returnExpression.status = 'AFTER_CONTRACT';
+    returnExpression.status = 'afterMarker';
     return returnExpression;
   }
 
@@ -161,7 +161,7 @@ export class StepperBinaryExpression implements StepperAST {
   operator: BinaryOperator
   left: StepperExpression
   right: StepperExpression
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
   constructor(operator: BinaryOperator, left: StepperExpression, right: StepperExpression) {
     this.type = 'BinaryExpression'
     this.operator = operator
@@ -182,7 +182,7 @@ export class StepperBinaryExpression implements StepperAST {
     const result = isNumberLiteral(this.left) && isNumberLiteral(this.right);
     if (result) {
       console.log("CONTRACT", this);
-      this.status = "BEFORE_CONTRACT";
+      this.status = "beforeMarker";
     }
     return result;
   }
@@ -194,7 +194,7 @@ export class StepperBinaryExpression implements StepperAST {
       (this.right as StepperLiteral).value
     )
     const result = new StepperLiteral(evaluatedExpression);
-    result.status = 'AFTER_CONTRACT'
+    result.status = 'afterMarker'
     return result;
   }
 
@@ -218,7 +218,7 @@ export class StepperConditionalExpression implements StepperAST {
   test: StepperExpression
   alternate: StepperExpression
   consequent: StepperExpression
-  status: 'BEFORE_CONTRACT' | 'AFTER_CONTRACT' | undefined
+  status: 'beforeMarker' | 'afterMarker' | undefined
   constructor(
     test: StepperExpression,
     alternate: StepperExpression,
@@ -243,7 +243,7 @@ export class StepperConditionalExpression implements StepperAST {
 
   contract(): StepperExpression {
     const returnedExpression = (this.test as StepperLiteral).value === true ? this.alternate : this.consequent
-    returnedExpression.status = 'AFTER_CONTRACT'
+    returnedExpression.status = 'afterMarker'
     return returnedExpression;
   }
 
