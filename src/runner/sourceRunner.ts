@@ -18,13 +18,6 @@ import { defaultAnalysisOptions } from '../modules/preprocessor/analyzer'
 import { defaultLinkerOptions } from '../modules/preprocessor/linker'
 import { parse } from '../parser/parser'
 import { AsyncScheduler, PreemptiveScheduler } from '../schedulers'
-import {
-  callee,
-  getEvaluationSteps,
-  getRedex,
-  type IStepperPropContents,
-  redexify
-} from '../stepper/stepper'
 import { sandboxedEval } from '../transpiler/evalContainer'
 import { transpile } from '../transpiler/transpiler'
 import { Chapter, type Context, type RecursivePartial, type Scheduler, Variant } from '../types'
@@ -37,6 +30,9 @@ import { mapResult } from '../alt-langs/mapper'
 import { toSourceError } from './errors'
 import { fullJSRunner } from './fullJSRunner'
 import { determineExecutionMethod, determineVariant, resolvedErrorPromise } from './utils'
+import { getSteps } from '../stepper/stepperV2/steppers'
+import { createStepperExpression } from '../stepper/stepperV2/nodes/Expression'
+import { IStepperPropContents } from '../stepper/stepperV2'
 
 const DEFAULT_SOURCE_OPTIONS: Readonly<IOptions> = {
   scheduler: 'async',
@@ -86,7 +82,23 @@ function runConcurrent(program: es.Program, context: Context, options: IOptions)
   }
 }
 
-function runSubstitution(
+function runSubstitution( 
+  program: es.Program,
+  context: Context,
+  options: IOptions
+): Promise<Result> {
+  // At this stage, our stepper only supports StepperExpression
+  const expression = createStepperExpression((program.body[0] as es.ExpressionStatement).expression);
+  const steps: IStepperPropContents[] = getSteps(expression)
+  return Promise.resolve({
+    status: 'finished',
+    context,
+    value: steps
+  })
+}
+
+/*
+function _runSubstitution(
   program: es.Program,
   context: Context,
   options: IOptions
@@ -111,7 +123,7 @@ function runSubstitution(
     context,
     value: redexedSteps
   })
-}
+}*/
 
 function runInterpreter(program: es.Program, context: Context, options: IOptions): Promise<Result> {
   let it = evaluate(program, context)

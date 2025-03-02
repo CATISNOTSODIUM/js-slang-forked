@@ -1,9 +1,9 @@
 import { StepperExpression } from './nodes/Expression'
-import { redex } from '.'
+import { IStepperPropContents, redex } from '.'
 
 export function getSteps(
   node: StepperExpression
-): [StepperExpression, StepperExpression | null, string][] {
+): IStepperPropContents[] {
   const steps: [StepperExpression, StepperExpression | null, string][] = []
   function evaluate(node: StepperExpression): StepperExpression {
     const isOneStepPossible = node.isOneStepPossible()

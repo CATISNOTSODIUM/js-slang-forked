@@ -4,3 +4,5 @@ export let redex: { preRedex: StepperExpression | null; postRedex: StepperExpres
   preRedex: null,
   postRedex: null
 }
+
+export type IStepperPropContents = [StepperExpression, StepperExpression | null, string];
