@@ -6,7 +6,7 @@ import { StepperLiteral } from './Literal'
 export type StepperExpression = StepperBinaryExpression | StepperUnaryExpression | StepperLiteral
 
 export function createStepperExpression(expression: Expression): StepperExpression {
-  switch (expression.type) {
+    switch (expression.type) {
     case 'BinaryExpression':
       return new StepperBinaryExpression(expression as BinaryExpression)
     case 'UnaryExpression':

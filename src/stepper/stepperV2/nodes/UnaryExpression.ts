@@ -70,4 +70,9 @@ export class StepperUnaryExpression implements UnaryExpression, StepperBaseNode 
   oneStep(): StepperExpression & StepperBaseNode {
     return createStepperExpression(unaryExpression(this.operator, this.argument.oneStep()))
   }
+
+  toString(): string {
+    return `${this.operator}${this.argument.toString()}`
+  }
+
 }

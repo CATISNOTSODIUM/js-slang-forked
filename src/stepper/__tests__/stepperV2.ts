@@ -11,5 +11,7 @@ test('arithmetic', () => {
   `
 const program = parse(code, mockContext())!
 const targetExpression = program.body[0] as es.ExpressionStatement;
-console.log(getSteps(createStepperExpression(targetExpression.expression)));
+console.log(JSON.stringify(program, null, 4));
+console.log(getSteps(createStepperExpression(targetExpression.expression))
+            .map(x => [x[0].toString(), x[1] ? x[1].toString() : "null"]));
 })

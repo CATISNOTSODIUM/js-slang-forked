@@ -97,4 +97,9 @@ export class StepperBinaryExpression implements BinaryExpression, StepperBaseNod
       ? createStepperExpression(binaryExpression(this.operator, this.left.oneStep(), this.right))
       : createStepperExpression(binaryExpression(this.operator, this.left, this.right.oneStep()))
   }
+
+  toString(): string {
+      return `${this.left.toString()} ${this.operator} ${this.right.toString()}`
+  }
+
 }

@@ -36,4 +36,9 @@ export class StepperLiteral implements SimpleLiteral, StepperBaseNode {
   oneStep(): StepperExpression {
     throw new Error('Method not implemented.')
   }
+
+  toString(): string {
+      return String(this.value);
+  }
+
 }
