@@ -6,5 +6,4 @@ export interface StepperBaseNode {
   isOneStepPossible(): boolean
   contract(): SimpleLiteral & StepperBaseNode
   oneStep(): StepperExpression
-  toString(): string
 }

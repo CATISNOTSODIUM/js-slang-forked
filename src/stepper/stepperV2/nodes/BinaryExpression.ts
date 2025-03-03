@@ -1,6 +1,6 @@
 import { BinaryExpression, BinaryOperator, Comment, SimpleLiteral, SourceLocation } from 'estree'
 import { StepperBaseNode } from '../interface'
-import { binaryExpression, literal } from '../../../utils/ast/astCreator'
+import { literal } from '../../../utils/ast/astCreator'
 import { redex } from '..'
 import { createStepperExpression, StepperExpression } from './Expression'
 import { StepperLiteral } from './Literal'
@@ -15,15 +15,19 @@ export class StepperBinaryExpression implements BinaryExpression, StepperBaseNod
   loc?: SourceLocation | null
   range?: [number, number]
 
-  constructor(expression: BinaryExpression) {
+  static create(expression: BinaryExpression) {
+    return new StepperBinaryExpression(
+      expression.operator,
+      createStepperExpression(expression.left),
+      createStepperExpression(expression.right)
+    )
+  }
+
+  constructor(operator: BinaryOperator, left: StepperExpression, right: StepperExpression) {
     this.type = 'BinaryExpression'
-    this.operator = expression.operator
-    this.left = createStepperExpression(expression.left)
-    this.right = createStepperExpression(expression.right)
-    this.leadingComments = expression.leadingComments
-    this.trailingComments = expression.trailingComments
-    this.loc = expression.loc
-    this.range = expression.range
+    this.operator = operator
+    this.left = left
+    this.right = right
   }
 
   isContractible(): boolean {
@@ -85,21 +89,15 @@ export class StepperBinaryExpression implements BinaryExpression, StepperBaseNod
     let ret = createStepperExpression(
       literal(value as string | number | boolean | null)
     ) as StepperLiteral
-
     redex.postRedex = ret
     return ret
   }
 
   oneStep(): StepperExpression {
     return this.isContractible()
-      ? createStepperExpression(this.contract())
+      ? this.contract()
       : this.left.isOneStepPossible()
-      ? createStepperExpression(binaryExpression(this.operator, this.left.oneStep(), this.right))
-      : createStepperExpression(binaryExpression(this.operator, this.left, this.right.oneStep()))
+      ? new StepperBinaryExpression(this.operator, this.left.oneStep(), this.right)
+      : new StepperBinaryExpression(this.operator, this.left, this.right.oneStep())
   }
-
-  toString(): string {
-      return `${this.left.toString()} ${this.operator} ${this.right.toString()}`
-  }
-
 }

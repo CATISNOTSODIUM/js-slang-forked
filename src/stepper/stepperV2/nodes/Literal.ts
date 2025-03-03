@@ -11,14 +11,13 @@ export class StepperLiteral implements SimpleLiteral, StepperBaseNode {
   loc?: SourceLocation | null
   range?: [number, number]
 
-  constructor(literal: SimpleLiteral) {
+  constructor(value:  string | number | boolean | null) {
     this.type = 'Literal'
-    this.value = literal.value
-    this.raw = literal.raw
-    this.leadingComments = literal.leadingComments
-    this.trailingComments = literal.trailingComments
-    this.loc = literal.loc
-    this.range = literal.range
+    this.value = value
+  }
+
+  static create(literal: SimpleLiteral) {
+    return new StepperLiteral(literal.value);
   }
 
   isContractible(): boolean {
@@ -36,9 +35,4 @@ export class StepperLiteral implements SimpleLiteral, StepperBaseNode {
   oneStep(): StepperExpression {
     throw new Error('Method not implemented.')
   }
-
-  toString(): string {
-      return String(this.value);
-  }
-
 }

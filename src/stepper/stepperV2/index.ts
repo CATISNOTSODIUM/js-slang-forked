@@ -6,3 +6,4 @@ export let redex: { preRedex: StepperExpression | null; postRedex: StepperExpres
 }
 
 export type IStepperPropContents = [StepperExpression, StepperExpression | null, string];
+export { toStringWithMarker } from "./generator"

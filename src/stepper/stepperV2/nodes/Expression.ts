@@ -8,11 +8,11 @@ export type StepperExpression = StepperBinaryExpression | StepperUnaryExpression
 export function createStepperExpression(expression: Expression): StepperExpression {
     switch (expression.type) {
     case 'BinaryExpression':
-      return new StepperBinaryExpression(expression as BinaryExpression)
+      return StepperBinaryExpression.create(expression as BinaryExpression)
     case 'UnaryExpression':
-      return new StepperUnaryExpression(expression as UnaryExpression)
+      return StepperUnaryExpression.create(expression as UnaryExpression)
     case 'Literal':
-      return new StepperLiteral(expression as SimpleLiteral)
+      return StepperLiteral.create(expression as SimpleLiteral)
     default:
       throw new Error(`Unsupported expression type: ${expression.type}`)
   }

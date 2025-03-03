@@ -15,15 +15,15 @@ export class StepperUnaryExpression implements UnaryExpression, StepperBaseNode 
   loc?: SourceLocation | null
   range?: [number, number]
 
-  constructor(node: UnaryExpression) {
+  constructor(operator: UnaryOperator, argument: StepperExpression) {
     this.type = 'UnaryExpression'
-    this.operator = node.operator
-    this.prefix = node.prefix
-    this.argument = createStepperExpression(node.argument)
-    this.leadingComments = node.leadingComments
-    this.trailingComments = node.trailingComments
-    this.loc = node.loc
-    this.range = node.range
+    this.operator = operator
+    this.prefix = true
+    this.argument = argument
+  }
+
+  static create(node: UnaryExpression) {
+    return new StepperUnaryExpression(node.operator, createStepperExpression(node.argument))
   }
 
   isContractible(): boolean {
@@ -69,10 +69,6 @@ export class StepperUnaryExpression implements UnaryExpression, StepperBaseNode 
 
   oneStep(): StepperExpression & StepperBaseNode {
     return createStepperExpression(unaryExpression(this.operator, this.argument.oneStep()))
-  }
-
-  toString(): string {
-    return `${this.operator}${this.argument.toString()}`
   }
 
 }
