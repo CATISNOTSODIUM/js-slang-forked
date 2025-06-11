@@ -47,15 +47,6 @@ export interface SourceError {
   elaborate(): string
 }
 
-export interface Rule<T extends Node> {
-  name: string
-  disableFromChapter?: Chapter
-  disableForVariants?: Variant[]
-  checkers: {
-    [name: string]: (node: T, ancestors: Node[]) => SourceError[]
-  }
-}
-
 export interface Comment {
   type: 'Line' | 'Block'
   value: string
@@ -64,7 +55,7 @@ export interface Comment {
   loc: SourceLocation | undefined
 }
 
-export type ExecutionMethod = 'native' | 'interpreter' | 'auto' | 'cse-machine'
+export type ExecutionMethod = 'native' | 'auto' | 'cse-machine'
 
 export enum Chapter {
   SOURCE_1 = 1,
@@ -94,15 +85,15 @@ export enum Variant {
   TYPED = 'typed',
   NATIVE = 'native',
   WASM = 'wasm',
-  LAZY = 'lazy',
-  CONCURRENT = 'concurrent',
-  GPU = 'gpu',
   EXPLICIT_CONTROL = 'explicit-control'
 }
+
+export type LanguageOptions = Record<string, string>
 
 export interface Language {
   chapter: Chapter
   variant: Variant
+  languageOptions?: LanguageOptions
 }
 
 export type ValueWrapper = LetWrapper | ConstWrapper
@@ -122,7 +113,6 @@ export interface NativeStorage {
   builtins: Map<string, Value>
   previousProgramsIdentifiers: Set<string>
   operators: Map<string, (...operands: Value[]) => Value>
-  gpu: Map<string, (...operands: Value[]) => Value>
   maxExecTime: number
   evaller: null | ((program: string) => Value)
   /*
@@ -131,6 +121,7 @@ export interface NativeStorage {
   close in the surrounding values, so no problem
    */
   loadedModules: Record<string, ModuleFunctions>
+  loadedModuleTypes: Record<string, Record<string, string>>
 }
 
 export interface Context<T = any> {
@@ -170,7 +161,6 @@ export interface Context<T = any> {
     status: boolean
     state: {
       it: IterableIterator<T>
-      scheduler: Scheduler
     }
   }
 
@@ -193,9 +183,14 @@ export interface Context<T = any> {
 
   /**
    * Describes the strategy / paradigm to be used for evaluation
-   * Examples: lazy, concurrent or nondeterministic
+   * Examples: concurrent
    */
   variant: Variant
+
+  /**
+   * Describes the custom language option to be used for evaluation
+   */
+  languageOptions: LanguageOptions
 
   /**
    * Contains the evaluated code that has not yet been typechecked.
@@ -262,12 +257,6 @@ export interface Environment {
   thisContext?: Value
 }
 
-export interface Thunk {
-  value: any
-  isMemoized: boolean
-  f: () => any
-}
-
 export interface Error {
   status: 'error'
 }
@@ -282,23 +271,12 @@ export interface Finished {
   // field instead
 }
 
-export interface Suspended {
-  status: 'suspended'
-  it: IterableIterator<Value>
-  scheduler: Scheduler
-  context: Context
-}
-
 export interface SuspendedCseEval {
   status: 'suspended-cse-eval'
   context: Context
 }
 
-export type Result = Suspended | Finished | Error | SuspendedCseEval
-
-export interface Scheduler {
-  run(it: IterableIterator<Value>, context: Context): Promise<Result>
-}
+export type Result = Finished | Error | SuspendedCseEval
 
 /**
  * StatementSequence : A sequence of statements not surrounded by braces.
@@ -511,10 +489,13 @@ export type TypeEnvironment = {
  * By default, `Partial<Array<T>>` is equivalent to `Array<T | undefined>`. For this type, `Array<T>` will be
  * transformed to Array<Partial<T>> instead
  */
-export type RecursivePartial<T> = T extends Array<any>
-  ? Array<RecursivePartial<T[number]>>
-  : T extends Record<any, any>
-  ? Partial<{
-      [K in keyof T]: RecursivePartial<T[K]>
-    }>
-  : T
+export type RecursivePartial<T> =
+  T extends Array<any>
+    ? Array<RecursivePartial<T[number]>>
+    : T extends Record<any, any>
+      ? Partial<{
+          [K in keyof T]: RecursivePartial<T[K]>
+        }>
+      : T
+
+export type NodeTypeToNode<T extends Node['type']> = Extract<Node, { type: T }>

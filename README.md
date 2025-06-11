@@ -22,7 +22,7 @@ Open-source implementations of the programming language _Source_. Source is a se
 
 - NodeJS v20
 - Python: On MacBook Pro with chip Apple M1 Pro, use python 3.10.12. Here is [the correct way to set Python 3 as default on a Mac](https://opensource.com/article/19/5/python-3-default-mac).
-
+- yarn: use the version specified in `package.json`. On macos, you may need to run `corepack enable`.
 ## Usage
 
 To build,
@@ -64,7 +64,7 @@ You can set additional options:
 Usage: js-slang [PROGRAM_STRING] [OPTION]
 
   -c, --chapter=CHAPTER set the Source chapter number (i.e., 1-4)                                                              (default: 1)
-  -v, --variant=VARIANT set the Source variant (i.e., default, interpreter, substituter, typed, lazy, concurrent, wasm, gpu) (default: default)
+  -v, --variant=VARIANT set the Source variant (i.e., default, interpreter, substituter, typed, wasm) (default: default)
   -h, --help            display this help
   -e, --eval            don't show REPL, only display output of evaluation
 ```
@@ -73,21 +73,17 @@ Currently, valid CHAPTER/VARIANT combinations are:
 
 - `--chapter=1 --variant=default`
 - `--chapter=1 --variant=wasm`
-- `--chapter=1 --variant=lazy`
 - `--chapter=1 --variant=substituter`
 - `--chapter=1 --variant=interpreter`
 - `--chapter=1 --variant=typed`
 - `--chapter=2 --variant=default`
-- `--chapter=2 --variant=lazy`
 - `--chapter=2 --variant=substituter`
 - `--chapter=2 --variant=interpreter`
 - `--chapter=2 --variant=typed`
 - `--chapter=3 --variant=default`
-- `--chapter=3 --variant=concurrent`
 - `--chapter=3 --variant=interpreter`
 - `--chapter=3 --variant=typed`
 - `--chapter=4 --variant=default`
-- `--chapter=4 --variant=gpu`
 - `--chapter=4 --variant=interpreter`
 
 Hint: In `bash` you can take the `PROGRAM_STRING` out of a file as follows:
@@ -134,7 +130,7 @@ Documentation of libraries is displayed in autocomplete in the frontend. This do
 `js-slang` comes with an extensive test suite. To run the tests after you made your modifications, run `yarn test`. Regression tests are run automatically when you want to push changes to this repository. The regression tests are generated using `jest` and stored as snapshots in `src/\_\_tests\_\_`. After modifying `js-slang`, carefully inspect any failing regression tests reported in red in the command line. If you are convinced that the regression tests and not your changes are at fault, you can update the regression tests as follows:
 
 ```bash
-$ yarn test -- --updateSnapshot
+$ yarn test --updateSnapshot
 ```
 
 ## Error messages
